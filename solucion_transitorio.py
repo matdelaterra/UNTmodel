@@ -12,23 +12,23 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
-q = 4
+q = 4#cm/d
 porosidad = 0.4
 vz = q/porosidad #cm/d
 #R = 0.5
-dt = 0.04#dia
+dt = 0.01#dia
 dz = 1 #cm
-L = 100
-T = 300
-D = 0.01 #dispersión
+L = 50
+T = 300#pasos
+D = 0.001 #dispersión
 dominio = np.linspace(0,L,L+1)
+
 #Condiciones iniciales
 condicion = np.ones(L+1)
 condicion[0] = 60
 frontera = 60
-
-
 incognitas = L
+
 
 a = -( D * dt)/(2 * dz**2)
 b = (vz * dt)/( 4 * dz)
@@ -38,7 +38,7 @@ b = (vz * dt)/( 4 * dz)
 
 soluciones = [list(condicion)]
 
-for t in range(T):
+for t in range(T):#ciclo de tiempo
     matriz = np.zeros((incognitas, incognitas))
     vector = np.zeros(incognitas)
     for x in range(L):
@@ -72,6 +72,7 @@ fig, ax = plt.subplots()
 xdata, ydata = dominio , condicion
 ax.set(xlabel = 'Dominio Z', ylabel = 'Concentración',
        title='Transporte de contaminante') 
+#ax.legend('NO3')
 ln, = plt.plot([], [], marker='o', lw=0.2)
 
 def init():
@@ -80,7 +81,7 @@ def init():
     return ln,
 
 def update(paso):
-
+    print(paso)
     xdata = dominio  
     ydata = paso[:]
     ln.set_data(xdata, ydata)
