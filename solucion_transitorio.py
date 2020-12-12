@@ -9,14 +9,14 @@ Created on Mon Nov 30 13:40:51 2020
 #diferencias hacia atrás en el tiempo usando upwind
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 
 
 q = 10#cm/d
 porosidad = 0.4
 vz = q/porosidad #cm/d
 #R = 0.5
-dt = 0.01#dia
+dt = 0.1#dia
 dz = 1 #cm
 L = 50
 T = 300#pasos
@@ -40,7 +40,7 @@ b = (vz * dt)/( 2 * dz)
 ## tamaño del dominio
 #pasos de tiempo
 
-soluciones = [list(condicion)]
+soluciones = [np.array([condicion])]
 
 for t in range(T):#ciclo de tiempo
     matriz = np.zeros((incognitas, incognitas))
@@ -67,30 +67,33 @@ for t in range(T):#ciclo de tiempo
     
     sol = np.linalg.solve(matriz, vector)
     condicion[1:] = sol[:]
-    soluciones.append(list(condicion))
+    soluciones.append(np.array([condicion]))
 
 
 
+# fps = 30
+# nSeconds = 5
+# snapshots = [ np.random.rand(1,5) for _ in range( nSeconds * fps ) ]
 
+# # First set up the figure, the axis, and the plot element we want to animate
 fig, ax = plt.subplots()
-xdata, ydata = dominio , condicion
-ax.set(xlabel = 'Dominio Z', ylabel = 'Concentración',
-       title='Transporte de contaminante') 
-#ax.legend('NO3')
-ln, = plt.plot([], [], marker='o', lw=0.2)
+ax.set(xlabel = 'Dominio x', title='Concentración') 
 
-def init():
-    ax.set_xlim(0, L+1)
-    ax.set_ylim(-10, frontera*2)
-    return ln,
+a = soluciones[0]
+im = ax.imshow(a, aspect='auto', cmap='rainbow')
+ax.yaxis.set_ticklabels('')
+cbar = fig.colorbar(im, spacing='proportional',
+                    shrink=0.9, ax=ax)
+cbar.set_label("Concentración $mg/L$")
+plt.grid()
+#plt.axis('off')
+def animate_func(i):
+    im.set_array(soluciones[i])
+    return [im]
 
-def update(paso):
-    print(paso)
-    xdata = dominio  
-    ydata = paso[:]
-    ln.set_data(xdata, ydata)
-    return ln,
-
-ani = FuncAnimation(fig, update, soluciones ,
-                    init_func=init, blit=True, repeat=False)
-plt.show()
+anim = animation.FuncAnimation(
+                                fig, 
+                                animate_func#, 
+                                #frames = nSeconds * fps,
+                                #interval = 1000 / fps, # in ms
+                                )
