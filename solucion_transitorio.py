@@ -6,13 +6,13 @@ Created on Mon Nov 30 13:40:51 2020
 """
 #Solución para la ecuación de transporte con flujo en estado estacionario
 #Utilizando diferencias finitas centradas en el tiempo, con el método de 
-#Crank Nicolson.
+#diferencias hacia atrás en el tiempo usando upwind
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
-q = 4#cm/d
+q = 10#cm/d
 porosidad = 0.4
 vz = q/porosidad #cm/d
 #R = 0.5
@@ -20,18 +20,22 @@ dt = 0.01#dia
 dz = 1 #cm
 L = 50
 T = 300#pasos
-D = 0.001 #dispersión
+D = 0.01 #dispersión
 dominio = np.linspace(0,L,L+1)
 
+#upwind
+Dh = D*(1 + (vz*dz)/(2*D))
+
+
 #Condiciones iniciales
-condicion = np.ones(L+1)
+condicion = np.zeros(L+1)
 condicion[0] = 60
 frontera = 60
 incognitas = L
 
 
-a = -( D * dt)/(2 * dz**2)
-b = (vz * dt)/( 4 * dz)
+a = ( Dh * dt)/(dz**2)
+b = (vz * dt)/( 2 * dz)
 
 ## tamaño del dominio
 #pasos de tiempo
@@ -46,20 +50,20 @@ for t in range(T):#ciclo de tiempo
             matriz[x,x] = 1 + 2*a
             matriz[x,x+1] = -a + b
                 
-            vector[x] =  (a+b)*condicion[x] + (1-2*a)*condicion[x+1] + (a-b)*condicion[x+2] + (a+b)*frontera 
+            vector[x] =  condicion[x+1] + (a+b)*frontera 
                 
         elif 0 < x < L-1:
-            matriz[x,x+1] = -(a-b)
+            matriz[x,x+1] = -a + b
             matriz[x,x] = 1 + 2*a
             matriz[x,x-1] = -(a+b)
                 
-            vector[x] = (a+b)*condicion[x] + (1-2*a)*condicion[x+1] + (a-b)*condicion[x+2]
+            vector[x] = condicion[x+1] 
         
         elif x == L-1:
             matriz[x,x-1] = -(a+b)
             matriz[x,x] = 1+a+b
                 
-            vector[x] = (a+b)*condicion[x] * (1-a-b)*condicion[x+1]
+            vector[x] = condicion[x+1]
     
     sol = np.linalg.solve(matriz, vector)
     condicion[1:] = sol[:]
@@ -88,5 +92,5 @@ def update(paso):
     return ln,
 
 ani = FuncAnimation(fig, update, soluciones ,
-                    init_func=init, blit=True, repeat= True)
+                    init_func=init, blit=True, repeat=False)
 plt.show()
