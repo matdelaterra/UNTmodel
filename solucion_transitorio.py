@@ -16,7 +16,7 @@ q = 10#cm/d
 porosidad = 0.4
 vz = q/porosidad #cm/d
 #R = 0.5
-dt = 0.1#dia
+dt = 0.01#dia
 dz = 1 #cm
 L = 50
 T = 300#pasos
@@ -93,7 +93,7 @@ def animate_func(i):
 
 anim = animation.FuncAnimation(
                                 fig, 
-                                animate_func#, 
-                                #frames = nSeconds * fps,
+                                animate_func,#, 
+                                frames = len(soluciones)
                                 #interval = 1000 / fps, # in ms
                                 )
