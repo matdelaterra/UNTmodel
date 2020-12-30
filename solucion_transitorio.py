@@ -12,13 +12,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
-q = 10#cm/d
+q = 2#cm/d
 porosidad = 0.4
 vz = q/porosidad #cm/d
 #R = 0.5
 dt = 0.01#dia
 dz = 1 #cm
-L = 50
+L = 100
 T = 300#pasos
 D = 0.01 #dispersión
 dominio = np.linspace(0,L,L+1)
@@ -40,7 +40,7 @@ b = (vz * dt)/( 2 * dz)
 ## tamaño del dominio
 #pasos de tiempo
 
-soluciones = [np.array([condicion])]
+soluciones = [np.array([condicion]).T]
 
 for t in range(T):#ciclo de tiempo
     matriz = np.zeros((incognitas, incognitas))
@@ -67,7 +67,7 @@ for t in range(T):#ciclo de tiempo
     
     sol = np.linalg.solve(matriz, vector)
     condicion[1:] = sol[:]
-    soluciones.append(np.array([condicion]))
+    soluciones.append(np.array([condicion]).T)
 
 
 
@@ -77,11 +77,11 @@ for t in range(T):#ciclo de tiempo
 
 # # First set up the figure, the axis, and the plot element we want to animate
 fig, ax = plt.subplots()
-ax.set(xlabel = 'Dominio x', title='Concentración') 
+ax.set(ylabel = 'Dominio Z', title='Concentración') 
 
 a = soluciones[0]
 im = ax.imshow(a, aspect='auto', cmap='rainbow')
-ax.yaxis.set_ticklabels('')
+ax.xaxis.set_ticklabels('')
 cbar = fig.colorbar(im, spacing='proportional',
                     shrink=0.9, ax=ax)
 cbar.set_label("Concentración $mg/L$")
@@ -89,11 +89,11 @@ plt.grid()
 #plt.axis('off')
 def animate_func(i):
     im.set_array(soluciones[i])
+    ax.set
     return [im]
 
-anim = animation.FuncAnimation(
-                                fig, 
-                                animate_func,#, 
-                                frames = len(soluciones)
+anim = animation.FuncAnimation(fig, 
+                               animate_func,#, 
+                               frames = len(soluciones)
                                 #interval = 1000 / fps, # in ms
                                 )
