@@ -15,11 +15,11 @@ import matplotlib.animation as animation
 q = 0.24#m/d
 porosidad = 0.25
 vz = q#/porosidad #cm/d
-R = 1 #Retardación
-dt = 10#dia
+R = 10 #Retardación
+dt = 1#dia
 dz = 10 #cm
 L = 100
-T = 200#pasos
+T = 2000#pasos
 D = 0.001 #dispersión
 dominio = np.linspace(0, L*dz, L+1)
 
@@ -35,7 +35,7 @@ frontera = 1
 incognitas = L
 
 
-a = ( Dh * dt)/(R*dz**2)
+a = (Dh * dt)/(R*dz**2)
 b = (vz * dt)/(R*2 * dz)
 
 ## tamaño del dominio
