@@ -15,7 +15,7 @@ import matplotlib.animation as animation
 q = 0.24#m/d
 porosidad = 0.25
 vz = q#/porosidad #cm/d
-R = 10 #Retardación
+R = 1 #Retardación
 dt = 1#dia
 dz = 10 #cm
 L = 100
