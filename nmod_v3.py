@@ -347,7 +347,7 @@ if __name__ == '__main__':
     }
 
     #Creación del objeto modelo
-    mod = Modelo(120, 1, propiedades=dic_h, NH4=60, NO3 = 1)
+    mod = Modelo(120, 1, propiedades=dic_h, NH4=10, NO3 = 1)
     mod.run()
     mod.graficar()
 
