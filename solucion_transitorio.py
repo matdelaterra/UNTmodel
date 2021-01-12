@@ -7,6 +7,7 @@ Created on Mon Nov 30 13:40:51 2020
 #Solución para la ecuación de transporte con flujo en estado estacionario
 #Utilizando diferencias finitas centradas en el tiempo, con el método de 
 #diferencias hacia atrás en el tiempo usando upwind
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -18,11 +19,12 @@ vz = q#/porosidad #cm/d
 R = 1 #Retardación
 dt = 1#dia
 dz = 10 #cm
+prof = 1000
 L = 100
 T = 2000#pasos
 D = 0.001 #dispersión
 dominio = np.linspace(0, L*dz, L+1)
-
+dom = np.linspace(0, prof, int(prof//dz)+1)
 #upwind
 Dh = D*(1 + (vz*dz)/(2*D))
 
@@ -30,8 +32,9 @@ Dh = D*(1 + (vz*dz)/(2*D))
 reac = 0#-0.1
 #Condiciones iniciales
 condicion = np.zeros(L+1)
-condicion[0] = 1
-frontera = 1
+frontera = 60
+condicion[0] = frontera
+
 incognitas = L
 
 

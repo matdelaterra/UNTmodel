@@ -53,7 +53,7 @@ class Modelo:
         return prof
     
     
-    def __presion(self, Yo=0): ## Perfil de presión
+    def __calc_presion(self, Yo=0): ## Perfil de presión
         dz = self.__incremento
         psi = np.zeros(len(self.__p_profundidad))
         propiedades = self.__propiedades
@@ -70,7 +70,7 @@ class Modelo:
         return psi
     
     
-    def __tetha(self):####### Perfil de humedad
+    def __calc_humedad(self):####### Perfil de humedad
         presion = self.__p_presion
         aVG = self.__propiedades['aVG']
         qs = self.__propiedades['qs']
@@ -116,7 +116,7 @@ class Modelo:
         return cont_c
     
     
-    def __fswnt(self):
+    def __f_SwNit(self):
         WFP = self.__WFP
         fs  = self.__propiedades['fs']
         fwp = self.__propiedades['fwp']
@@ -140,7 +140,7 @@ class Modelo:
         return fsw_nt
         
       
-    def __fswdnt(self):
+    def __f_SwDNit(self):
         WFP  = self.__WFP
         sdn  = self.__propiedades['sdn']
         ednt = self.__propiedades['ednt']
@@ -157,7 +157,7 @@ class Modelo:
         return fsw_dnt
     
  ##### Parámetros que se utilizan en el calculo de C   
-    def __fR(self):
+    def __f_retardacion(self):
         kd = self.__propiedades['kd']
         tetha = self.__p_humedad
         rho =  self.__propiedades['rho']
@@ -169,7 +169,7 @@ class Modelo:
         self.__df_salida['R'] = np.flip(r)
         return r
     
-    def __f_krmax(self):
+    def __fNITmax(self):
         kr_max = self.__propiedades['kr_max']
         kr = self.__fsw_nt * kr_max
         self.__krmax = kr
@@ -177,7 +177,7 @@ class Modelo:
         return kr
     
     
-    def __fVmax(self):
+    def __fDNTmax(self):
         Vmax = self.__propiedades['Vmax']
         Vm = self.__fsw_dnt * Vmax
         self.__Vmax = Vm
@@ -254,25 +254,25 @@ class Modelo:
         self.__perfil_z()
         #### HIDRAULICA Y CONTENIDO DE HUMEDAD
         #Cálculo de presiones
-        self.__presion()# = 
+        self.__calc_presion()# = 
         #perfil de humedad
-        self.__tetha()
+        self.__calc_humedad()
         #WFP
         self.__fWFP()
         #FACTORES PARA LAS REACCIONES
         ## efecto del contenido de carbono
         self.__fcont_c()
         ## efecto de sw en la nit
-        self.__fswnt()
+        self.__f_SwNit()
         ## efecto de sw en la desn
-        self.__fswdnt()
+        self.__f_SwDNit()
         #ELEMENTOS PARA CALCULAR LAS CONCENTRACIONES
         ### factor de retardación
-        self.__fR()
+        self.__f_retardacion()
         ### kr max
-        self.__f_krmax()
+        self.__fNITmax()
         ##Vmax
-        self.__fVmax()
+        self.__fDNTmax()
         ## Concentraciones
         self.__Cnit()
         
