@@ -414,7 +414,6 @@ class Transitorio(Modelo):
             soluciones.append(np.array([condicion]))
         
         self.soluciones = soluciones 
-
         
         
         
