@@ -331,41 +331,52 @@ class Transitorio(Modelo):
         self.allow_graph = False
         self.dispersion = dispersion
         self.soluciones = None
-        self.soluciones_NO3 = None
+        self.soluciones_NO3 = None 
         self.allow_reac = reac
         self.retardacion = retardacion
     
         
     def ejecutar(self):
         self.run()
-        
+        ##Definición de parametros
         L = self.p_profundidad.shape[0]
         p_retardacion = self.df_salida['R']
         reac_nit = self.df_salida['krmax']
         v_flujo = self.propiedades['HLR']
         km = self.propiedades['Km_nit'] 
-        
+        ##Parámetros
         dt = self.dt
         dz = self.incremento
         T = self.pasos
         D = self.dispersion
-        #upwind
+        ### Esquema temporal
+        eps = 0.5
         
-        Dh = D*(1 + (v_flujo*dz)/(2*D))
+        
+        #upwind
+        peclet = (v_flujo*dz)/(2*D)
+        print(peclet)
+        lamb = 1 -0.78#(1/peclet) #+ (2/(np.e**(2*peclet)-1)) 
+        ###Difusión artificial
+        Dh = D*(1 + lamb*peclet)
+        #condiciones iniciales y de frontera
         condicion = np.zeros(L)
         frontera = self.NH4
         condicion[0] = frontera
+        
         incognitas = L-1
         
         react_array = np.zeros(incognitas)
         ###
+        
         soluciones = [np.array([condicion])] 
 
         for t in range(T):#ciclo de tiempo
+        
             matriz = np.zeros((incognitas, incognitas))
             vector = np.zeros(incognitas)
             
-            for x in range(L-1):
+            for x in range(incognitas):
                 if self.allow_reac:
                     f_reac = lambda con, mu_max, km: (mu_max*con)/(km+con)
                     #Reacciones nitrificacion
@@ -385,26 +396,45 @@ class Transitorio(Modelo):
                 alfa = (Dh * dt)/(R*dz**2)
                 beta = (v_flujo * dt)/(R*2 * dz)
                 
+                
+                
+                ## Llenado de la matriz, y el vector de coeficientes
+                
                 if x == 0:
-                    matriz[x, x] = 1 + 2*alfa
-                    matriz[x, x+1] = -alfa + beta
-                    vector[x] =  condicion[x+1] + (alfa + beta)*frontera# -reac_nt
+                    matriz[x, x] = 1 + 2*eps*alfa
+                    matriz[x, x+1] = -eps*(alfa - beta)
+                    
+                    nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                    nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
+                    nodo_f = condicion[x+2]*(1-eps)*(alfa-beta)
+                    vector[x] =  nodo_b + nodo_c + nodo_f + eps*(alfa + beta)*frontera# -reac_nt
 
                 
-                elif 0 < x < L-2:
-                    matriz[x, x+1] = -alfa + beta 
-                    matriz[x, x] = 1 + 2*alfa
-                    matriz[x, x-1] = -(alfa + beta) 
-                    vector[x] = condicion[x+1] #-reac_nt
+                elif 0 < x < incognitas-1:
+                    matriz[x, x+1] = -eps*(alfa - beta) 
+                    matriz[x, x] = 1 + 2*eps*alfa
+                    matriz[x, x-1] = -eps*(alfa + beta) 
+                    
+                    nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                    nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
+                    nodo_f = condicion[x+2]*(1-eps)*(alfa-beta)                    
+                    vector[x] =  nodo_b + nodo_c + nodo_f #-reac_nt
+                    
                     
 
-                elif x == L-2:
-                    matriz[x, x-1] = -(alfa + beta)
-                    matriz[x, x] = 1 + alfa + beta
-                    vector[x] = condicion[x+1] #-reac_nt
+                elif x == incognitas-1:
+                    matriz[x, x-1] = -eps*(alfa + beta)
+                    matriz[x, x] = 1 + eps*(alfa + beta)
+                    
+                    nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                    nodo_c = condicion[x+1]*(1-(1-eps)*(alfa+beta))                    
+                    
+                    
+                    vector[x] = nodo_b + nodo_c #-reac_nt
                     
 
                     
+            ##Agregar algoritmo de gradiente biconjugado
             
             sol = np.linalg.solve(matriz, vector-react_array) #- react_array #
 
@@ -427,7 +457,7 @@ class Transitorio(Modelo):
 if __name__ == '__main__':
     #Diccionario de propiedades
     dic_h = {
-    'HLR':0.24,
+    'HLR':0.245,
     'aG':0.025,#	 aG
     'aVG':0.015,#	aVG
     'Ks':14.75,#	Ks
@@ -470,10 +500,11 @@ if __name__ == '__main__':
     #e_dat = est.get_data()
     #est.graficar()
     
-    tran = Transitorio(1000,10,2000,1,dic_h, 
+    tran = Transitorio(1000,1,2000,1,dic_h,
                        #reac=True,
                        retardacion=False,
-                       NH4=1
+                       NH4=1,
+                       dispersion=0.005
                        )
     tran.ejecutar()
     tran.graficar()
