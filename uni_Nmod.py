@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+from time import time
 
 ##Orientado a objetos, el objeto es modelo 
 class Modelo:
@@ -360,8 +361,10 @@ class Transitorio(Modelo):
         react_array = np.zeros(incognitas)
         ###
         soluciones = [np.array([condicion])] 
+        t_inig = time() 
 
         for t in range(T):#ciclo de tiempo
+            print('Paso = ',t)
             matriz = np.zeros((incognitas, incognitas))
             vector = np.zeros(incognitas)
             
@@ -414,7 +417,9 @@ class Transitorio(Modelo):
             soluciones.append(np.array([condicion]))
         
         self.soluciones = soluciones 
-        
+        t_fing = time() 
+        print(f'Tiempo de ejecución: {round(t_fing - t_inig, 5)}')
+
         
         
         
@@ -470,7 +475,7 @@ if __name__ == '__main__':
     #e_dat = est.get_data()
     #est.graficar()
     
-    tran = Transitorio(1000,10,2000,1,dic_h, 
+    tran = Transitorio(1000,.1,10,1,dic_h, 
                        #reac=True,
                        retardacion=False,
                        NH4=1
