@@ -76,17 +76,17 @@ def prodpunto(vec1,vec2):
 
 def gradbic(mat,mat_trans,vector):
     
-    dim = vector.shape[0]#tamaño de la matriz
+    #dim = vector.shape[0]#tamaño de la matriz
     tol = 1e-5
     
     #Datos en CRS
-    val,col_ind,ren_in =  mat[0], mat[1], mat[2]
-    valt,col_indt,ren_int = mat[0], mat[1], mat[2]#Matriz transpuesta convertida a CRS
+    val,col_ind,ren_in =  np.copy(mat[0]), np.copy(mat[1]), np.copy(mat[2])
+    valt,col_indt,ren_int = np.copy(mat_trans[0]), np.copy(mat_trans[1]),np.copy(mat_trans[2])#Matriz transpuesta convertida a CRS
     
     
     #vectores iniciales
-    x = np.ones(dim)#Solucion inicial, vector lleno de valor = 1     
-    r = np.copy(vector)-prodmatCRS(val,col_ind,ren_in,x)#residuo(Gradiente inicial)
+    x = np.copy(vector)#Solucion inicial, vector lleno de valor = 1     
+    r = vector-prodmatCRS(val,col_ind,ren_in,x)#residuo(Gradiente inicial)
     r_ps = np.copy(r)# Pseudo gradiente inicial
     p = np.copy(r)#dirección de descenso inicial
     p_ps = np.copy(r_ps)
@@ -109,8 +109,6 @@ def gradbic(mat,mat_trans,vector):
         x += rho * p
         r -= rho * w
         r_ps -= rho * w_ps
-        #print('r', r)
-        #print('r_ps', r_ps)
         
                 
         gamma = beta
@@ -125,9 +123,6 @@ def gradbic(mat,mat_trans,vector):
         #comprobacion
         
         if maxerror(r)<=tol:#norma del error maximo
-            
-            #print(tol)
-            #print(maxerror(r))
             break
         i += 1
     return(x)
