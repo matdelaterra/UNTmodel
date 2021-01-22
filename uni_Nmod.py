@@ -9,6 +9,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+from linalCRS import *
+
+
 
 ##Orientado a objetos, el objeto es modelo 
 class Modelo:
@@ -372,8 +375,10 @@ class Transitorio(Modelo):
         soluciones = [np.array([condicion])] 
 
         for t in range(T):#ciclo de tiempo
-        
-            matriz = np.zeros((incognitas, incognitas))
+            elementos = 3*incognitas-2
+            mat = [np.zeros(elementos), np.zeros(elementos,dtype=np.int32), np.zeros(incognitas,dtype=np.int32)]
+            mat_tr = [np.zeros(elementos), np.zeros(elementos,dtype=np.int32), np.zeros(incognitas,dtype=np.int32)]
+            
             vector = np.zeros(incognitas)
             
             for x in range(incognitas):
@@ -401,8 +406,17 @@ class Transitorio(Modelo):
                 ## Llenado de la matriz, y el vector de coeficientes
                 
                 if x == 0:
-                    matriz[x, x] = 1 + 2*eps*alfa
-                    matriz[x, x+1] = -eps*(alfa - beta)
+                    mat[0][x], mat[0][x+1] = 1 + 2*eps*alfa, -eps*(alfa - beta)
+                    mat[1][x], mat[1][x+1] = x, x+1
+                    mat[2][x] = 0
+                    
+                    
+                    mat_tr[0][x], mat_tr[0][x+1] = 1 + 2*eps*alfa, -eps*(alfa + beta)
+                    mat_tr[1][x], mat_tr[1][x+1] = x, x+1
+                    mat_tr[2][x] = 0                    
+                    
+                    
+                    
                     
                     nodo_b = condicion[x]*(1-eps)*(alfa+beta)
                     nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
@@ -411,9 +425,14 @@ class Transitorio(Modelo):
 
                 
                 elif 0 < x < incognitas-1:
-                    matriz[x, x+1] = -eps*(alfa - beta) 
-                    matriz[x, x] = 1 + 2*eps*alfa
-                    matriz[x, x-1] = -eps*(alfa + beta) 
+                    mat[0][3*x-1], mat[0][3*x], mat[0][3*x+1] = -eps*(alfa + beta), 1 + 2*eps*alfa, -eps*(alfa - beta)
+                    mat[1][3*x-1], mat[1][3*x], mat[1][3*x+1] = x-1, x, x+1
+                    mat[2][x] = 2+3*(x-1)
+                    
+                    mat_tr[0][3*x-1], mat_tr[0][3*x], mat_tr[0][3*x+1] = -eps*(alfa - beta), 1 + 2*eps*alfa, -eps*(alfa + beta)
+                    mat_tr[1][3*x-1], mat_tr[1][3*x], mat_tr[1][3*x+1] = x-1, x, x+1
+                    mat_tr[2][x] = 2+3*(x-1)                    
+                    
                     
                     nodo_b = condicion[x]*(1-eps)*(alfa+beta)
                     nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
@@ -423,20 +442,27 @@ class Transitorio(Modelo):
                     
 
                 elif x == incognitas-1:
-                    matriz[x, x-1] = -eps*(alfa + beta)
-                    matriz[x, x] = 1 + eps*(alfa + beta)
+                    mat[0][3*x-1], mat[0][3*x] = -eps*(alfa + beta), 1 + eps*(alfa + beta)
+                    mat[1][3*x-1], mat[1][3*x] = x-1, x
+                    mat[2][x] = 2+3*(x-1)
+                    
+                    mat_tr[0][3*x-1], mat_tr[0][3*x] = -eps*(alfa - beta), 1 + eps*(alfa + beta)
+                    mat_tr[1][3*x-1], mat_tr[1][3*x] = x-1, x
+                    mat_tr[2][x] = 2+3*(x-1)                    
+                    
                     
                     nodo_b = condicion[x]*(1-eps)*(alfa+beta)
                     nodo_c = condicion[x+1]*(1-(1-eps)*(alfa+beta))                    
-                    
-                    
                     vector[x] = nodo_b + nodo_c #-reac_nt
                     
-
+            
+            self.matrices = mat, mat_tr
                     
             ##Agregar algoritmo de gradiente biconjugado
             
-            sol = np.linalg.solve(matriz, vector-react_array) #- react_array #
+            sol = gradbic(mat,mat_tr, vector)
+            
+            #sol = np.linalg.solve(matriz, vector-react_array) #- react_array #
 
             
             
