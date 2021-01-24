@@ -9,7 +9,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+from linalCRS import *
 from time import time
+
+
 
 ##Orientado a objetos, el objeto es modelo 
 class Modelo:
@@ -332,43 +335,56 @@ class Transitorio(Modelo):
         self.allow_graph = False
         self.dispersion = dispersion
         self.soluciones = None
-        self.soluciones_NO3 = None
+        self.soluciones_NO3 = None 
         self.allow_reac = reac
         self.retardacion = retardacion
     
         
     def ejecutar(self):
         self.run()
-        
+        ##Definición de parametros
         L = self.p_profundidad.shape[0]
         p_retardacion = self.df_salida['R']
         reac_nit = self.df_salida['krmax']
         v_flujo = self.propiedades['HLR']
         km = self.propiedades['Km_nit'] 
-        
+        ##Parámetros
         dt = self.dt
         dz = self.incremento
-        T = self.pasos
+        T =  self.pasos
         D = self.dispersion
-        #upwind
         
-        Dh = D*(1 + (v_flujo*dz)/(2*D))
+        ### Esquema temporal 0.5 = Crank-Nicolson, 1 = implicito, 0 = explicito
+        eps = 0.5
+        
+        
+        #upwind
+        peclet = (v_flujo*dz)/(2*D)
+        print(peclet)
+        lamb = 1 -0.78#(1/peclet) #+ (2/(np.e**(2*peclet)-1)) 
+        ###Difusión artificial
+        Dh = D*(1 + lamb*peclet)
+        #condiciones iniciales y de frontera
         condicion = np.zeros(L)
         frontera = self.NH4
         condicion[0] = frontera
+        
         incognitas = L-1
         
         react_array = np.zeros(incognitas)
-        ###
-        soluciones = [np.array([condicion])] 
-        t_inig = time() 
 
+        soluciones = [np.array([condicion])] 
+        
+        ## Solución de los sistemas de ecuaciones lineales en cada paso de tiempo
+        t_inig = time() 
         for t in range(T):#ciclo de tiempo
-            print('Paso = ',t)
-            matriz = np.zeros((incognitas, incognitas))
-            vector = np.zeros(incognitas)
+            if t == 0:
+                elementos = 3*incognitas-2
+                mat = (np.zeros(elementos), np.zeros(elementos,dtype=np.int32), np.zeros(incognitas,dtype=np.int32))
+                mat_tr = (np.zeros(elementos), np.zeros(elementos,dtype=np.int32), np.zeros(incognitas,dtype=np.int32))
+                vector = np.zeros(incognitas)
             
-            for x in range(L-1):
+            for x in range(incognitas):
                 if self.allow_reac:
                     f_reac = lambda con, mu_max, km: (mu_max*con)/(km+con)
                     #Reacciones nitrificacion
@@ -388,39 +404,89 @@ class Transitorio(Modelo):
                 alfa = (Dh * dt)/(R*dz**2)
                 beta = (v_flujo * dt)/(R*2 * dz)
                 
-                if x == 0:
-                    matriz[x, x] = 1 + 2*alfa
-                    matriz[x, x+1] = -alfa + beta
-                    vector[x] =  condicion[x+1] + (alfa + beta)*frontera# -reac_nt
+                
+                
+                ## Llenado de la matriz, y el vector de coeficientes
+                if t == 0:
+                        
+                    if x == 0:
+                        mat[0][x], mat[0][x+1] = 1 + 2*eps*alfa, -eps*(alfa - beta)
+                        mat[1][x], mat[1][x+1] = x, x+1
+                        mat[2][x] = 0
+                        
+                        
+                        mat_tr[0][x], mat_tr[0][x+1] = 1 + 2*eps*alfa, -eps*(alfa + beta)
+                        mat_tr[1][x], mat_tr[1][x+1] = x, x+1
+                        mat_tr[2][x] = 0                    
+                    
+                        nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                        nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
+                        nodo_f = condicion[x+2]*(1-eps)*(alfa-beta)
+                        vector[x] =  nodo_b + nodo_c + nodo_f + eps*(alfa + beta)*frontera# -reac_nt
+    
+                    
+                    elif 0 < x < incognitas-1:
+                        mat[0][3*x-1], mat[0][3*x], mat[0][3*x+1] = -eps*(alfa + beta), 1 + 2*eps*alfa, -eps*(alfa - beta)
+                        mat[1][3*x-1], mat[1][3*x], mat[1][3*x+1] = x-1, x, x+1
+                        mat[2][x] = 2+3*(x-1)
+                        
+                        mat_tr[0][3*x-1], mat_tr[0][3*x], mat_tr[0][3*x+1] = -eps*(alfa - beta), 1 + 2*eps*alfa, -eps*(alfa + beta)
+                        mat_tr[1][3*x-1], mat_tr[1][3*x], mat_tr[1][3*x+1] = x-1, x, x+1
+                        mat_tr[2][x] = 2+3*(x-1)                    
+                        
+                        
+                        nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                        nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
+                        nodo_f = condicion[x+2]*(1-eps)*(alfa-beta)                    
+                        vector[x] =  nodo_b + nodo_c + nodo_f #-reac_nt
+                        
+                        
+    
+                    elif x == incognitas-1:
+                        mat[0][3*x-1], mat[0][3*x] = -eps*(alfa + beta), 1 + eps*(alfa + beta)
+                        mat[1][3*x-1], mat[1][3*x] = x-1, x
+                        mat[2][x] = 2+3*(x-1)
+                        
+                        mat_tr[0][3*x-1], mat_tr[0][3*x] = -eps*(alfa - beta), 1 + eps*(alfa + beta)
+                        mat_tr[1][3*x-1], mat_tr[1][3*x] = x-1, x
+                        mat_tr[2][x] = 2+3*(x-1)                    
+                        
+                        
+                        nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                        nodo_c = condicion[x+1]*(1-(1-eps)*(alfa+beta))                    
+                        vector[x] = nodo_b + nodo_c #-reac_nt
 
                 
-                elif 0 < x < L-2:
-                    matriz[x, x+1] = -alfa + beta 
-                    matriz[x, x] = 1 + 2*alfa
-                    matriz[x, x-1] = -(alfa + beta) 
-                    vector[x] = condicion[x+1] #-reac_nt
+                else: #llenado del vector de coeficientes
+                    if x == 0:
+                        nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                        nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
+                        nodo_f = condicion[x+2]*(1-eps)*(alfa-beta)
+                        vector[x] =  nodo_b + nodo_c + nodo_f + eps*(alfa + beta)*frontera# -reac_nt
+    
                     
-
-                elif x == L-2:
-                    matriz[x, x-1] = -(alfa + beta)
-                    matriz[x, x] = 1 + alfa + beta
-                    vector[x] = condicion[x+1] #-reac_nt
+                    elif 0 < x < incognitas-1:
+                        nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                        nodo_c = condicion[x+1]*(1-2*(1-eps)*alfa)
+                        nodo_f = condicion[x+2]*(1-eps)*(alfa-beta)                    
+                        vector[x] =  nodo_b + nodo_c + nodo_f #-reac_nt
+                        
+    
+                    elif x == incognitas-1: 
+                        nodo_b = condicion[x]*(1-eps)*(alfa+beta)
+                        nodo_c = condicion[x+1]*(1-(1-eps)*(alfa+beta))                    
+                        vector[x] = nodo_b + nodo_c #-reac_nt                    
+            
                     
-
-                    
+            ##Agregar algoritmo de gradiente biconjugado
             
-            sol = np.linalg.solve(matriz, vector-react_array) #- react_array #
-
-            
-            
+            sol = gradbic(mat,mat_tr, vector)                        
             condicion[1:] = sol[:]
             soluciones.append(np.array([condicion]))
         
         self.soluciones = soluciones 
         t_fing = time() 
         print(f'Tiempo de ejecución: {round(t_fing - t_inig, 5)}')
-
-        
         
         
     def graficar(self):
@@ -432,7 +498,7 @@ class Transitorio(Modelo):
 if __name__ == '__main__':
     #Diccionario de propiedades
     dic_h = {
-    'HLR':0.24,
+    'HLR':0.245,
     'aG':0.025,#	 aG
     'aVG':0.015,#	aVG
     'Ks':14.75,#	Ks
@@ -475,10 +541,11 @@ if __name__ == '__main__':
     #e_dat = est.get_data()
     #est.graficar()
     
-    tran = Transitorio(1000,.1,10,1,dic_h, 
+    tran = Transitorio(1000,1,2000,1,dic_h,
                        #reac=True,
                        retardacion=False,
-                       NH4=1
+                       NH4=1,
+                       dispersion=0.005
                        )
     tran.ejecutar()
     tran.graficar()
