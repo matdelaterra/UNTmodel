@@ -14,6 +14,7 @@ from time import time
 
 
 
+
 ##Orientado a objetos, el objeto es modelo 
 class Modelo:
     def __init__(self, D=100, dz=1, propiedades=None, NH4=60, NO3=0.1):
@@ -493,6 +494,29 @@ class Transitorio(Modelo):
         
         plt.plot(self.p_profundidad, self.soluciones[-1].T, label='Upwind')
         #plt.plot(self.p_profundidad, self.soluciones_NO3.T)
+    def animacion(self):
+        global anim
+        import matplotlib.animation as animation
+        soluciones = self.soluciones
+        fig, ax = plt.subplots()
+        ax.set(ylabel = 'Dominio Z', title='Concentración') 
+        
+        im = ax.imshow(soluciones[0].T, aspect='auto', cmap='rainbow')
+        ax.xaxis.set_ticklabels('')
+        cbar = fig.colorbar(im, spacing='proportional',
+                            shrink=0.9, ax=ax)
+        cbar.set_label("Concentración $mg/L$")
+        
+        #plt.axis('off')
+        def animate_func(i):
+            im.set_array(soluciones[i].T)
+            ax.set
+            return [im]
+        
+        anim = animation.FuncAnimation(fig, animate_func,
+                                       frames = len(soluciones),
+                                       repeat=False,interval=1000/30)
+        #return(anim)
 
 
 if __name__ == '__main__':
@@ -532,9 +556,9 @@ if __name__ == '__main__':
     }
 
     #Creación del objeto modelo
-    mod = Modelo(120, 1, propiedades=dic_h, NH4=10, NO3 = 1)
-    mod.run()
-    dat = mod.get_data()
+    # mod = Modelo(120, 1, propiedades=dic_h, NH4=10, NO3 = 1)
+    # mod.run()
+    # dat = mod.get_data()
     
     #est = Estacionario(120, 1, propiedades=dic_h, NH4=10, NO3 = 1)
     #est.ejecutar()
@@ -549,6 +573,7 @@ if __name__ == '__main__':
                        )
     tran.ejecutar()
     tran.graficar()
+    tran.animacion()
     
     
     
