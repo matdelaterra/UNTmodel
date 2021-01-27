@@ -362,7 +362,7 @@ class Transitorio(Modelo):
         #upwind
         peclet = (v_flujo*dz)/(2*D)
         print(peclet)
-        lamb = 1 -0.78#(1/peclet) #+ (2/(np.e**(2*peclet)-1)) 
+        lamb = 1 -0.78#(1/peclet) #+ (2/(np.e**(2*peclet)-1)) #Scharffeter-Gummel
         ###Difusión artificial
         Dh = D*(1 + lamb*peclet)
         #condiciones iniciales y de frontera
